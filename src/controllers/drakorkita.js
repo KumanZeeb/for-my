@@ -249,12 +249,87 @@ const searchAll = async (req, res) => {
     }
 };
 
+// UPDATE DETAIL ALL TYPE FUNCTION
 const detailAllType = async (req, res) => {
     try {
         const { endpoint } = req.params;
-
-        const axiosRequest = await makeRequest(`/detail/${endpoint}`);
-
+        const baseUrl = URLHelper.getBaseUrl();
+        const url = `${baseUrl}/detail/${endpoint}`;
+        
+        console.log('🔍 Fetching detail page:', url);
+        
+        // Special headers untuk detail page
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0',
+            'Referer': `${baseUrl}/`,
+            'Origin': baseUrl,
+            'DNT': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-User': '?1',
+            'Cookie': `PHPSESSID=${Math.random().toString(36).substring(2)}`
+        };
+        
+        // Coba beberapa metode
+        let axiosRequest;
+        
+        // Method 1: Direct dengan headers lengkap
+        try {
+            console.log('🔄 Method 1: Direct connection');
+            axiosRequest = await require('axios').get(url, {
+                headers,
+                timeout: 15000,
+                maxRedirects: 5,
+                httpsAgent: new (require('https')).Agent({ rejectUnauthorized: false })
+            });
+            console.log('✅ Direct connection success');
+        } catch (directError) {
+            console.log('❌ Direct failed:', directError.message);
+            
+            // Method 2: Pakai CORS proxy dengan referer yang benar
+            try {
+                console.log('🔄 Method 2: CORS Proxy');
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                axiosRequest = await require('axios').get(proxyUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'Referer': baseUrl,
+                        'Origin': baseUrl
+                    },
+                    timeout: 15000
+                });
+                console.log('✅ CORS proxy success');
+            } catch (proxyError) {
+                console.log('❌ CORS proxy failed:', proxyError.message);
+                
+                // Method 3: Pakai api.allorigins.win
+                try {
+                    console.log('🔄 Method 3: AllOrigins');
+                    const allOriginsUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                    const response = await require('axios').get(allOriginsUrl, {
+                        timeout: 15000
+                    });
+                    
+                    axiosRequest = {
+                        data: response.data,
+                        status: response.status,
+                        headers: response.headers
+                    };
+                    console.log('✅ AllOrigins success');
+                } catch (allOriginsError) {
+                    console.log('❌ All methods failed');
+                    throw allOriginsError;
+                }
+            }
+        }
+        
         const data = await scrapeDetailAllType({ endpoint }, axiosRequest);
 
         res.status(200).json({
@@ -268,7 +343,8 @@ const detailAllType = async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: "Failed to fetch data"
+            message: "Failed to fetch detail data",
+            error: process.env.NODE_ENV === 'development' ? e.message : undefined
         });
     }
 };
