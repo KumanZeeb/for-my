@@ -1,4 +1,6 @@
-const axios = require("axios")
+// src/controllers/drakorkita.js
+const ProxyHelper = require('../utils/proxyHelper');
+const URLHelper = require('../utils/urlHelper');
 const {
     scrapeSeries,
     scrapeSeriesUpdated,
@@ -10,218 +12,266 @@ const {
     scrapeDetailGenres,
     scrapeSearch,
     scrapeDetailAllType,
-} = require('../scrapers/drakorkita')
+} = require('../scrapers/drakorkita');
 
-const headers = {
-    "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
-}
+// Helper untuk membuat request dengan proxy
+const makeRequest = async (path, params = {}) => {
+    const url = URLHelper.buildUrl(path, params);
+    console.log('📡 Making request to:', url);
+    
+    try {
+        return await ProxyHelper.fetch(url, true);
+    } catch (error) {
+        console.error('❌ All request methods failed:', error.message);
+        throw error;
+    }
+};
 
 const seriesAll = async (req, res) => {
     try {
-        const { page = 1 } = req.query
-        const axiosRequest = await axios.get(`${process.env.DRAKORKITA_URL}/all?media_type=tv&page=${page}`, { headers })
+        const { page = 1 } = req.query;
+        const axiosRequest = await makeRequest('/all', {
+            media_type: 'tv',
+            page: page
+        });
 
-        const datas = await scrapeSeries(req, axiosRequest)
+        const datas = await scrapeSeries(req, axiosRequest);
 
         res.status(200).json({
-            message:"success",
+            success: true,
+            message: "success",
             page: parseInt(page),
             ...datas
-        })
+        });
     } catch (e) {
-        console.log(e)
+        console.error('❌ seriesAll error:', e.message);
 
-        res.json({
-            message:`${e}`
-        })
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch data",
+            error: process.env.NODE_ENV === 'development' ? e.message : undefined
+        });
     }
-}
+};
 
 const seriesUpdated = async (req, res) => {
     try {
-        const axiosRequest = await axios.get(`${process.env.DRAKORKITA_URL}`, { headers })
+        const axiosRequest = await makeRequest('/');
 
-        const datas = await scrapeSeriesUpdated(req, axiosRequest)
+        const datas = await scrapeSeriesUpdated(req, axiosRequest);
 
         res.status(200).json({
-            message:"success",
+            success: true,
+            message: "success",
             datas
-        })
+        });
     } catch (e) {
-        console.log(e)
+        console.error('❌ seriesUpdated error:', e.message);
 
-        res.json({
-            message:`${e}`
-        })
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch data"
+        });
     }
-}
+};
 
 const movieAll = async (req, res) => {
     try {
-        const { page = 1 } = req.query
-        const axiosRequest = await axios.get(`${process.env.DRAKORKITA_URL}/all?media_type=movie&page=${page}`, { headers })
+        const { page = 1 } = req.query;
+        const axiosRequest = await makeRequest('/all', {
+            media_type: 'movie',
+            page: page
+        });
 
-        const datas = await scrapeMovie(req, axiosRequest)
+        const datas = await scrapeMovie(req, axiosRequest);
 
         res.status(200).json({
-            message:"success",
+            success: true,
+            message: "success",
             page: parseInt(page),
             ...datas
-        })
+        });
     } catch (e) {
-        console.log(e)
+        console.error('❌ movieAll error:', e.message);
 
-        res.json({
-            message:`${e}`
-        })
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch data"
+        });
     }
-}
+};
 
 const newMovie = async (req, res) => {
     try {
-        const axiosRequest = await axios.get(`${process.env.DRAKORKITA_URL}`, { headers })
+        const axiosRequest = await makeRequest('/');
 
-        const datas = await scrapeNewMovie(req, axiosRequest)
+        const datas = await scrapeNewMovie(req, axiosRequest);
 
         res.status(200).json({
-            message:"success",
+            success: true,
+            message: "success",
             datas
-        })
+        });
     } catch (e) {
-        console.log(e)
+        console.error('❌ newMovie error:', e.message);
 
-        res.json({
-            message:`${e}`
-        })
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch data"
+        });
     }
-}
+};
 
 const ongoingSeries = async (req, res) => {
     try {
-        const { page = 1 } = req.query
-        const axiosRequest = await axios.get(`${process.env.DRAKORKITA_URL}/all?status=returning&page=${page}`, { headers })
+        const { page = 1 } = req.query;
+        const axiosRequest = await makeRequest('/all', {
+            status: 'returning',
+            page: page
+        });
 
-        const datas = await scrapeOngoingSeries(req, axiosRequest)
+        const datas = await scrapeOngoingSeries(req, axiosRequest);
 
         res.status(200).json({
-            message:"success",
+            success: true,
+            message: "success",
             page: parseInt(page),
             ...datas
-        })
+        });
     } catch (e) {
-        console.log(e)
+        console.error('❌ ongoingSeries error:', e.message);
 
-        res.json({
-            message:`${e}`
-        })
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch data"
+        });
     }
-}
+};
 
 const completedSeries = async (req, res) => {
     try {
-        const { page = 1 } = req.query
-        const axiosRequest = await axios.get(`${process.env.DRAKORKITA_URL}/all?status=ended&page=${page}`, { headers })
+        const { page = 1 } = req.query;
+        const axiosRequest = await makeRequest('/all', {
+            status: 'ended',
+            page: page
+        });
 
-        const datas = await scrapeCompletedSeries(req, axiosRequest)
+        const datas = await scrapeCompletedSeries(req, axiosRequest);
 
         res.status(200).json({
-            message:"success",
+            success: true,
+            message: "success",
             page: parseInt(page),
             ...datas
-        })
+        });
     } catch (e) {
-        console.log(e)
+        console.error('❌ completedSeries error:', e.message);
 
-        res.json({
-            message:`${e}`
-        })
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch data"
+        });
     }
-}
+};
 
 const genres = async (req, res) => {
     try {
-        const axiosRequest = await axios.get(`${process.env.DRAKORKITA_URL}`, { headers })
+        const axiosRequest = await makeRequest('/');
 
-        const datas = await scrapeGenres(req, axiosRequest)
+        const datas = await scrapeGenres(req, axiosRequest);
 
         res.status(200).json({
-            message:"success",
+            success: true,
+            message: "success",
             datas
-        })
+        });
     } catch (e) {
-        console.log(e)
+        console.error('❌ genres error:', e.message);
 
-        res.json({
-            message:`${e}`
-        })
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch data"
+        });
     }
-}
+};
 
 const detailGenres = async (req, res) => {
     try {
-        const { page = 1 } = req.query
-        const { endpoint } = req.params
-        const axiosRequest = await axios.get(`${process.env.DRAKORKITA_URL}/all?genre=${endpoint}&page=${page}`, { headers })
+        const { page = 1 } = req.query;
+        const { endpoint } = req.params;
+        const axiosRequest = await makeRequest('/all', {
+            genre: endpoint,
+            page: page
+        });
 
-        const datas = await scrapeDetailGenres({ page, endpoint }, axiosRequest)
+        const datas = await scrapeDetailGenres({ page, endpoint }, axiosRequest);
 
         res.status(200).json({
-            message:"success",
+            success: true,
+            message: "success",
             page: parseInt(page),
             ...datas
-        })
+        });
     } catch (e) {
-        console.log(e)
+        console.error('❌ detailGenres error:', e.message);
 
-        res.json({
-            message:`${e}`
-        })
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch data"
+        });
     }
-}
+};
 
 const searchAll = async (req, res) => {
     try {
-        const { s ,page = 1 } = req.query
-        const axiosRequest = await axios.get(`${process.env.DRAKORKITA_URL}/all?q=${s}&page=${page}`, { headers })
+        const { s, page = 1 } = req.query;
+        const axiosRequest = await makeRequest('/all', {
+            q: s,
+            page: page
+        });
 
-        const datas = await scrapeSearch(req, axiosRequest)
+        const datas = await scrapeSearch(req, axiosRequest);
 
         res.status(200).json({
-            message:"success",
+            success: true,
+            message: "success",
             page: parseInt(page),
             keyword: s,
             ...datas
-        })
+        });
     } catch (e) {
-        console.log(e)
+        console.error('❌ searchAll error:', e.message);
 
-        res.json({
-            message:`${e}`
-        })
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch data"
+        });
     }
-}
+};
 
 const detailAllType = async (req, res) => {
     try {
-        const { endpoint } = req.params
+        const { endpoint } = req.params;
 
-        const axiosRequest = await axios.get(`${process.env.DRAKORKITA_URL}/detail/${endpoint}`, { headers })
+        const axiosRequest = await makeRequest(`/detail/${endpoint}`);
 
-        const data = await scrapeDetailAllType({ endpoint }, axiosRequest)
+        const data = await scrapeDetailAllType({ endpoint }, axiosRequest);
 
         res.status(200).json({
+            success: true,
             message: "success",
             data
-        })
+        });
 
     } catch (e) {
-        console.log(e)
+        console.error('❌ detailAllType error:', e.message);
 
-        res.json({
-            message:`${e}`
-        })
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch data"
+        });
     }
-}
+};
 
 const getStreamUrl = async (req, res) => {
     try {
@@ -234,24 +284,25 @@ const getStreamUrl = async (req, res) => {
             });
         }
 
-        // Get detail data
-        const detailUrl = `${process.env.DRAKORKITA_URL}/detail/${endpoint}`;
-        const axiosResponse = await axios.get(detailUrl, { headers });
-        const $ = cheerio.load(axiosResponse.data);
+        // Get detail data dengan proxy
+        const detailResponse = await makeRequest(`/detail/${endpoint}`);
+        const cheerio = require('cheerio');
+        const $ = cheerio.load(detailResponse.data);
         
-        // Ambil movie_id dan tag (dari kode scraper sebelumnya)
+        // Ambil movie_id dan tag
         const onclick = $("div.pagination > a").last().attr("onclick");
         const movieIdAndTag = onclick.substring(onclick.indexOf("(") + 1, onclick.indexOf(")"));
         const movieId = movieIdAndTag.split(",")[0].replace(/^'|'$/g, '');
         const tag = movieIdAndTag.split(",")[1].replace(/^'|'$/g, '');
         
-        // Get episode list
-        const { data: { episode_lists } } = await axios.get(
-            `${process.env.DRAKORKITA_URL}/api/episode.php?movie_id=${movieId}&tag=${tag}`, 
-            { headers }
-        );
+        // Get episode list dengan proxy
+        const episodeResponse = await makeRequest('/api/episode.php', {
+            movie_id: movieId,
+            tag: tag
+        });
         
-        const $eps = cheerio.load(episode_lists);
+        const episodeData = episodeResponse.data;
+        const $eps = cheerio.load(episodeData.episode_lists || '');
         const episodes = $eps("p > a").get();
         
         // Pilih episode
@@ -261,17 +312,34 @@ const getStreamUrl = async (req, res) => {
         const epsId = epsIdAndTag.split(",")[0].replace(/^'|'$/g, '');
         const epsTag = epsIdAndTag.split(",")[1].replace(/^'|'$/g, '');
         
-        // Get video quality
-        const { data: {data: { qua, server_id }} } = await axios.get(
-            `${process.env.DRAKORKITA_URL}/api/server.php?episode_id=${epsId}&tag=${epsTag}`, 
-            { headers }
-        );
+        // Get video quality dengan proxy
+        const serverResponse = await makeRequest('/api/server.php', {
+            episode_id: epsId,
+            tag: epsTag
+        });
         
-        // Get video URL
-        const { data:{ file } } = await axios.get(
-            `${process.env.DRAKORKITA_URL}/api/video.php?id=${epsId}&qua=${qua}&server_id=${server_id}&tag=${epsTag}`,
-            { headers }
-        );
+        const serverData = serverResponse.data;
+        const qua = serverData.data?.qua;
+        const server_id = serverData.data?.server_id;
+        
+        if (!qua || !server_id) {
+            throw new Error('Failed to get video quality data');
+        }
+        
+        // Get video URL dengan proxy
+        const videoResponse = await makeRequest('/api/video.php', {
+            id: epsId,
+            qua: qua,
+            server_id: server_id,
+            tag: epsTag
+        });
+        
+        const videoData = videoResponse.data;
+        const file = videoData.file;
+        
+        if (!file) {
+            throw new Error('No video file found');
+        }
         
         // Parse video URLs
         const videoUrls = file.split(",");
@@ -297,13 +365,13 @@ const getStreamUrl = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('Error in getStreamUrl:', error.message);
+        console.error('❌ Error in getStreamUrl:', error.message);
         res.status(500).json({
             success: false,
-            error: error.message || 'Failed to get stream URL'
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Failed to get stream URL'
         });
     }
-}
+};
 
 module.exports = {
     seriesAll,
@@ -316,4 +384,5 @@ module.exports = {
     detailGenres,
     searchAll,
     detailAllType,
-}
+    getStreamUrl
+};

@@ -1,4 +1,4 @@
-// routes/drakorkita.js
+// src/routes/drakorkita.js
 const { Router } = require("express");
 const router = Router();
 
@@ -12,7 +12,8 @@ const {
     genres,
     detailGenres,
     searchAll,
-    detailAllType
+    detailAllType,
+    getStreamUrl  // Tambahkan ini kalau ada
 } = require("../controllers/drakorkita");
 
 // Drakorkita Routes
@@ -26,5 +27,8 @@ router.get("/genres", genres);
 router.get("/genres/:endpoint", detailGenres);
 router.get("/search", searchAll);
 router.get("/detail/:endpoint", detailAllType);
+
+// Tambahkan route stream jika ada
+// router.get("/stream", getStreamUrl);
 
 module.exports = router;
